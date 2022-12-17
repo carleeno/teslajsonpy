@@ -12,7 +12,12 @@ import pkgutil
 import time
 from typing import Dict, List, Optional, Text
 import httpx
-from tenacity import retry, stop_after_delay
+from tenacity import (
+    retry,
+    stop_after_delay,
+    before_sleep_log,
+    after_log,
+)
 from yarl import URL
 
 from teslajsonpy.car import TeslaCar
@@ -119,6 +124,7 @@ class Controller:
             auth_domain (str, optional): The authentication domain. Defaults to const.AUTH_DOMAIN
 
         """
+        _LOGGER.warning("Using an experimental build of teslajsonpy: 99.0.5")
         self.__connection = Connection(
             websession=websession
             if websession and isinstance(websession, httpx.AsyncClient)
@@ -1324,6 +1330,8 @@ class Controller:
         retry=custom_retry,
         stop=stop_after_delay(MAX_API_RETRY_TIME),
         reraise=True,
+        before_sleep=before_sleep_log(_LOGGER, logging.WARNING),
+        after=after_log(_LOGGER, logging.WARNING),
     )
     async def __post_with_retries(self, command, method="post", data=None, url=""):
         """Call connection.post with retries for common exceptions."""
